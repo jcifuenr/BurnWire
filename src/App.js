@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 
 export default function App() {
-  const [device, setDevice] = useState(null);
+  
+  const [bleUnsupported, setBleUnsupported] = useState(false);
+const [device, setDevice] = useState(null);
   const [rxChar, setRxChar] = useState(null);
   const [txChar, setTxChar] = useState(null);
   const [log, setLog] = useState([]);
@@ -14,6 +16,12 @@ export default function App() {
   const appendLog = (msg) => setLog((prev) => [...prev, msg]);
 
   const connect = async () => {
+    if (!navigator.bluetooth) {
+      appendLog("❌ Este navegador no soporta Web Bluetooth.");
+      setBleUnsupported(true);
+      return;
+    }
+
     try {
       const device = await navigator.bluetooth.requestDevice({
         filters: [{ namePrefix: 'ESP32' }],
@@ -35,9 +43,9 @@ export default function App() {
       setDevice(device);
       setRxChar(rx);
       setTxChar(tx);
-      appendLog("Conectado a " + device.name);
+      appendLog("✅ Conectado a " + device.name);
     } catch (error) {
-      appendLog("Error: " + error.message);
+      appendLog("❌ Error al conectar: " + error.message);
     }
   };
 
@@ -45,13 +53,19 @@ export default function App() {
     if (!rxChar) return;
     const data = new TextEncoder().encode(cmd + "\n");
     await rxChar.writeValue(data);
-    appendLog("Enviado: " + cmd);
+    appendLog("📤 Enviado: " + cmd);
   };
 
   return (
     <div style={{ fontFamily: "sans-serif", padding: "20px", maxWidth: 600, margin: "auto" }}>
       <h2>BurnWire_control 🔗</h2>
       <button onClick={connect}>🔌 Conectar BLE</button>
+      {bleUnsupported && (
+        <div style={{ padding: '10px', background: '#ffdddd', color: '#a00', marginTop: '15px' }}>
+          🚫 Web Bluetooth no está disponible. Usa Safari (iOS 16.4+) o Chrome (Android/PC).
+        </div>
+      )}
+
 
       <div style={{ marginTop: 20 }}>
         <input
